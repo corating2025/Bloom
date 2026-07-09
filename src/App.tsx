@@ -813,77 +813,58 @@ try {
     const textRaw = await response.text();
     throw new Error(`接口异常 ${response.status}，原始返回：${textRaw}`);
   }
-  const data = await response.json();
-  writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${data.feedback}`);
+  const result = await response.json();
+  // 所有业务逻辑全部放在 try 内部，不要写到外面
+  setStep4Checking(prev => ({ ...prev, [key]: false }));
+  setStep4Feedbacks(prev => ({ ...prev, [key]: result.feedback || '' }));
+
+  if (result.isEmpathetic) {
+    setStep4Submitted(prev => {
+      const next = { ...prev, [key]: true };
+      const submittedCount = Object.values(next).filter(Boolean).length;
+      
+      playSoundEffect('bloom');
+      setShowSparkles(true);
+      setTimeout(() => setShowSparkles(false), 2000);
+
+      if (submittedCount === 6) {
+        setPlantStage(5); // Bloom completely!
+        setSpeechBubble('🎉 Incredible! You solved all 6 empathy scenarios with true empathy! I am blooming completely with love! 🌸');
+        writeToTerminal('🏆 Congratulations! You successfully transformed all parent language with deep empathy!');
+        textToSpeech('Incredible! You completed all empathy lessons. I am blooming with love.');
+      } else {
+        setSpeechBubble(result.feedback || `Empathetic response accepted! (${submittedCount}/6) Keep helping Yuen! 💖`);
+        writeToTerminal(`[Step 4] Empathy accepted for "${key}". Teacher feedback: ${result.feedback}`);
+        // Gradually change flower stages
+        if (submittedCount === 1 || submittedCount === 2) setPlantStage(2);
+        if (submittedCount === 3 || submittedCount === 4) setPlantStage(3);
+        if (submittedCount === 5) setPlantStage(4);
+      }
+
+      return next;
+    });
+  } else {
+    playSoundEffect('cry');
+    setSpeechBubble(`Teacher Feedback: ${result.feedback} 💖`);
+    writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${result.feedback}`);
+  }
+// 关键：} 和 catch 同一行，只保留这一个catch，删除后面重复的catch
 } catch (error) {
   console.error("Error evaluating empathy:", error);
   setStep4Checking(prev => ({ ...prev, [key]: false }));
-}    
-      const result = await response.json();
-      setStep4Checking(prev => ({ ...prev, [key]: false }));
-      setStep4Feedbacks(prev => ({ ...prev, [key]: result.feedback || '' }));
-
-      if (result.isEmpathetic) {
-        setStep4Submitted(prev => {
-          const next = { ...prev, [key]: true };
-          const submittedCount = Object.values(next).filter(Boolean).length;
-          
-          playSoundEffect('bloom');
-          setShowSparkles(true);
-          setTimeout(() => setShowSparkles(false), 2000);
-
-          if (submittedCount === 6) {
-            setPlantStage(5); // Bloom completely!
-            setSpeechBubble('🎉 Incredible! You solved all 6 empathy scenarios with true empathy! I am blooming completely with love! 🌸');
-            writeToTerminal('🏆 Congratulations! You successfully transformed all parent language with deep empathy!');
-            textToSpeech('Incredible! You completed all empathy lessons. I am blooming with love.');
-          } else {
-            setSpeechBubble(result.feedback || `Empathetic response accepted! (${submittedCount}/6) Keep helping Yuen! 💖`);
-            writeToTerminal(`[Step 4] Empathy accepted for "${key}". Teacher feedback: ${result.feedback}`);
-            // Gradually change flower stages
-            if (submittedCount === 1 || submittedCount === 2) setPlantStage(2);
-            if (submittedCount === 3 || submittedCount === 4) setPlantStage(3);
-            if (submittedCount === 5) setPlantStage(4);
-          }
-
-          return next;
-        });
-      } else {
-        playSoundEffect('cry');
-        setSpeechBubble(`Teacher Feedback: ${result.feedback} 💖`);
-        writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${result.feedback}`);
-      }
-    } catch (error) {
-      console.error("Error evaluating empathy:", error);
-      setStep4Checking(prev => ({ ...prev, [key]: false }));
-      setStep4Feedbacks(prev => ({ ...prev, [key]: "Empathy analysis offline, but we believe in your kindness! ❤️" }));
-      // Graceful fallback: accept as correct
-      setStep4Submitted(prev => {
-        const next = { ...prev, [key]: true };
-        const submittedCount = Object.values(next).filter(Boolean).length;
-        playSoundEffect('bloom');
-        if (submittedCount === 6) {
-          setPlantStage(5);
-        }
-        return next;
-      });
-      setSpeechBubble("Communication is sweet! Your response is unlocked! ❤️");
+  setStep4Feedbacks(prev => ({ ...prev, [key]: "Empathy analysis offline, but we believe in your kindness! ❤️" }));
+  // Graceful fallback: accept as correct
+  setStep4Submitted(prev => {
+    const next = { ...prev, [key]: true };
+    const submittedCount = Object.values(next).filter(Boolean).length;
+    playSoundEffect('bloom');
+    if (submittedCount === 6) {
+      setPlantStage(5);
     }
-  };
-
-  const generateStep5Card = async () => {
-    if (!step5Message.trim()) {
-      setStep5Error("Please write a warm message for your card first! 💖");
-      return;
-    }
-    
-    setStep5Generating(true);
-    setStep5Error(null);
-    setStep5ImageUrl(null);
-    playSoundEffect('action');
-    setSpeechBubble('Magic is on the way... Painting a beautiful personalized card art background... 🎨');
-    writeToTerminal('[Step 5] Generating digital thank you card background via Gemini image model...');
-
+    return next;
+  });
+  setSpeechBubble("Communication is sweet! Your response is unlocked! ❤️");
+}
     // Compile dynamic custom prompt from user inputs
     const compiledPrompt = `Please create an image for a thank-you card for ${cardRecipient || 'someone special'}. Color & style: ${cardStyle || 'beautiful colors'}. Decoration elements: ${cardSticker || 'cute details'}.`;
 
