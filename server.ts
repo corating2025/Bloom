@@ -615,8 +615,7 @@ try {
       }
     }
   }
-} 
-catch (agnesError) {
+} catch (agnesError) {
   console.error("Agnes API image generation failed, falling back to local/Gemini:", agnesError);
 }
     
