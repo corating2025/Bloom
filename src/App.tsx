@@ -337,25 +337,28 @@ export default function App() {
   };
 
 const textToSpeech = (text: string) => {
-  if ('speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-GB';
-      utterance.rate = 0.85;
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-GB';
+  utterance.rate = 0.85;
+  utterance.pitch = 1.08;
 
-      // 筛选英式女声，贴近Agnes音色
-      const allVoices = window.speechSynthesis.getVoices();
-      const ukFemaleVoice = allVoices.find(voice =>
-        voice.lang.startsWith('en-GB') &&
-        (voice.name.toLowerCase().includes('female') || voice.name.includes('Agnes'))
-      );
-      if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
+  const setVoiceAndSpeak = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const ukFemaleVoice = voices.find(v =>
+      v.lang.startsWith('en-GB') &&
+      (v.name.toLowerCase().includes('female') || v.name.includes('Agnes'))
+    ) || voices.find(v => v.lang.startsWith('en-GB'));
+    if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
+    window.speechSynthesis.speak(utterance);
+  };
 
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {
-      console.error(e);
-    }
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    setVoiceAndSpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
   }
 };
 
