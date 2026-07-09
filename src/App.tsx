@@ -341,14 +341,18 @@ const textToSpeech = (text: string) => {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-GB';
-  utterance.rate = 0.85;
-  utterance.pitch = 1.08;
+  utterance.rate = 0.82;
+  utterance.pitch = 1.25;
 
   const setVoiceAndSpeak = () => {
     const voices = window.speechSynthesis.getVoices();
     const ukFemaleVoice = voices.find(v =>
       v.lang.startsWith('en-GB') &&
-      (v.name.toLowerCase().includes('female') || v.name.includes('Agnes'))
+      (
+        v.name.toLowerCase().includes('female')
+        || v.name.toLowerCase().includes('agnes')
+        || v.name.toLowerCase().includes('lucy')
+      )
     ) || voices.find(v => v.lang.startsWith('en-GB'));
     if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
     window.speechSynthesis.speak(utterance);
@@ -362,25 +366,23 @@ const textToSpeech = (text: string) => {
   }
 };
 
-  // 预加载系统语音列表，解决第一次打开找不到人声的bug
+// 预加载系统语音列表，解决第一次打开找不到人声的bug
 useEffect(() => {
-  const loadVoices = () => window.speechSynthesis.getVoices();
-  loadVoices();
-  window.speechSynthesis.onvoiceschanged = loadVoices;
+  window.speechSynthesis.getVoices();
 }, []);
 
-  // Nav across panels with Auto-Bypass
-  const handleStepSwitch = (stepNum: 1 | 2 | 3 | 4 | 5) => {
-    setActiveStep(stepNum);
-    if ((stepNum === 2 || stepNum === 3 || stepNum === 4 || stepNum === 5) && step1Stage < 4) {
-      setStep1Stage(4);
-      setPlantStage(4);
-      setPhysicalState({ water: true, soil: true, sun: true });
-      writeToTerminal('Curriculum Auto-Bypass: Plant physical care complete. READY FOR WORDS OF EMPATHY!');
-    } else {
-      writeToTerminal(`Workspace set to Step ${stepNum}.`);
-    }
-  };
+// Nav across panels with Auto-Bypass
+const handleStepSwitch = (stepNum: 1 | 2 | 3 | 4 | 5) => {
+  setActiveStep(stepNum);
+  if ((stepNum === 2 || stepNum === 3 || stepNum === 4 || stepNum === 5) && step1Stage < 4) {
+    setStep1Stage(4);
+    setPlantStage(4);
+    setPhysicalState({ water: true, soil: true, sun: true });
+    writeToTerminal('Curriculum Auto-Bypass: Plant physical care complete. READY FOR WORDS OF EMPATHY!');
+  } else {
+    writeToTerminal(`Workspace set to Step ${stepNum}.`);
+  }
+};
 
   // Step 1: Start Caring Diagnostic Flow
   const startStep1Flow = () => {
