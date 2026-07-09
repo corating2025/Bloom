@@ -797,334 +797,359 @@ const handleStepSwitch = (stepNum: 1 | 2 | 3 | 4 | 5) => {
     setStep4Checking(prev => ({ ...prev, [key]: true }));
     const scenario = step4Scenarios.find(s => s.id === key);
 
-try {
-  // fetch 请求全部代码
-  const response = await fetch('/api/empathy/check', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: key,
-      complaint: scenario?.parentComplaint || "",
-      advice: scenario?.advice || "",
-      userInput: text
-    })
-  });
-  if (!response.ok) {
-    const textRaw = await response.text();
-    throw new Error(`接口异常 ${response.status}，原始返回：${textRaw}`);
-  }
-  const result = await response.json();
-  // 所有业务逻辑全部放在 try 内部，不要写到外面
-  setStep4Checking(prev => ({ ...prev, [key]: false }));
-  setStep4Feedbacks(prev => ({ ...prev, [key]: result.feedback || '' }));
-
-  if (result.isEmpathetic) {
-    setStep4Submitted(prev => {
-      const next = { ...prev, [key]: true };
-      const submittedCount = Object.values(next).filter(Boolean).length;
-      
-      playSoundEffect('bloom');
-      setShowSparkles(true);
-      setTimeout(() => setShowSparkles(false), 2000);
-
-      if (submittedCount === 6) {
-        setPlantStage(5); // Bloom completely!
-        setSpeechBubble('🎉 Incredible! You solved all 6 empathy scenarios with true empathy! I am blooming completely with love! 🌸');
-        writeToTerminal('🏆 Congratulations! You successfully transformed all parent language with deep empathy!');
-        textToSpeech('Incredible! You completed all empathy lessons. I am blooming with love.');
-      } else {
-        setSpeechBubble(result.feedback || `Empathetic response accepted! (${submittedCount}/6) Keep helping Yuen! 💖`);
-        writeToTerminal(`[Step 4] Empathy accepted for "${key}". Teacher feedback: ${result.feedback}`);
-        // Gradually change flower stages
-        if (submittedCount === 1 || submittedCount === 2) setPlantStage(2);
-        if (submittedCount === 3 || submittedCount === 4) setPlantStage(3);
-        if (submittedCount === 5) setPlantStage(4);
-      }
-
-      return next;
+const handleEvaluateEmpathy = async (key: string, text: string, scenario: typeof step4Scenarios[number]) => {
+  setStep4Checking(prev => ({ ...prev, [key]: true }));
+  try {
+    // fetch 请求全部代码
+    const response = await fetch('/api/empathy/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: key,
+        complaint: scenario?.parentComplaint || "",
+        advice: scenario?.advice || "",
+        userInput: text
+      })
     });
-  } else {
-    playSoundEffect('cry');
-    setSpeechBubble(`Teacher Feedback: ${result.feedback} 💖`);
-    writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${result.feedback}`);
-  }
-// 关键：} 和 catch 同一行，只保留这一个catch，删除后面重复的catch
-} catch (error) {
-  console.error("Error evaluating empathy:", error);
-  setStep4Checking(prev => ({ ...prev, [key]: false }));
-  setStep4Feedbacks(prev => ({ ...prev, [key]: "Empathy analysis offline, but we believe in your kindness! ❤️" }));
-  // Graceful fallback: accept as correct
-  setStep4Submitted(prev => {
-    const next = { ...prev, [key]: true };
-    const submittedCount = Object.values(next).filter(Boolean).length;
-    playSoundEffect('bloom');
-    if (submittedCount === 6) {
-      setPlantStage(5);
+    if (!response.ok) {
+      const textRaw = await response.text();
+      throw new Error(`接口异常 ${response.status}，原始返回：${textRaw}`);
     }
-    return next;
-  });
-  setSpeechBubble("Communication is sweet! Your response is unlocked! ❤️");
-}
-    // Compile dynamic custom prompt from user inputs
-    const compiledPrompt = `Please create an image for a thank-you card for ${cardRecipient || 'someone special'}. Color & style: ${cardStyle || 'beautiful colors'}. Decoration elements: ${cardSticker || 'cute details'}.`;
+    const result = await response.json();
+    // 所有业务逻辑全部放在 try 内部，不要写到外面
+    setStep4Checking(prev => ({ ...prev, [key]: false }));
+    setStep4Feedbacks(prev => ({ ...prev, [key]: result.feedback || '' }));
 
-    try {
-      const response = await fetch('/api/card/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: step5Message,
-          customPrompt: compiledPrompt,
-          recipient: cardRecipient,
-          style: cardStyle,
-          sticker: cardSticker
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate background. Make sure your Gemini API key is configured!");
-      }
-
-      const result = await response.json();
-      if (result.imageUrl) {
-        setStep5ImageUrl(result.imageUrl);
+    if (result.isEmpathetic) {
+      setStep4Submitted(prev => {
+        const next = { ...prev, [key]: true };
+        const submittedCount = Object.values(next).filter(Boolean).length;
+        
         playSoundEffect('bloom');
         setShowSparkles(true);
         setTimeout(() => setShowSparkles(false), 2000);
-        setSpeechBubble(`🎉 Presto! The AI has created a gorgeous card background styled with ${cardStyle}! 🌸`);
-        writeToTerminal('[Step 5] Thank you card background generated successfully!');
-      } else {
-        throw new Error("No image URL returned from API");
-      }
-    } catch (err: any) {
-      console.error("Gemini image API is currently offline/exhausted. Generating cozy dynamic custom vector illustration:", err);
-      
-      // Beautiful local SVG watercolor vector fallback pattern customized by the student's choices!
-      const generateLocalCustomSvg = (style: string = '', sticker: string = '', recipient: string = '') => {
-        const styleLower = (style || '').toLowerCase();
-        const stickerLower = (sticker || '').toLowerCase();
-        
-        let bgGradient = {
-          start: '#fff5f5',
-          end: '#fef2f2',
-          accent: '#fecdd3',
-          border: '#fda4af',
-          leafColor: '#fb7185'
-        };
-        
-        if (styleLower.includes('pink') || styleLower.includes('purple') || styleLower.includes('violet') || styleLower.includes('lavender')) {
-          bgGradient = {
-            start: '#fff1f2',
-            end: '#f5f3ff',
-            accent: '#fbcfe8',
-            border: '#f472b6',
-            leafColor: '#c084fc'
-          };
-        } else if (styleLower.includes('sunset') || styleLower.includes('orange') || styleLower.includes('peach') || styleLower.includes('warm') || styleLower.includes('red') || styleLower.includes('coral')) {
-          bgGradient = {
-            start: '#fff5f5',
-            end: '#fef3c7',
-            accent: '#fed7aa',
-            border: '#fb923c',
-            leafColor: '#f59e0b'
-          };
-        } else if (styleLower.includes('floral') || styleLower.includes('green') || styleLower.includes('yellow') || styleLower.includes('garden') || styleLower.includes('leaf') || styleLower.includes('nature')) {
-          bgGradient = {
-            start: '#f0fdf4',
-            end: '#fefce8',
-            accent: '#bbf7d0',
-            border: '#86efac',
-            leafColor: '#22c55e'
-          };
-        } else if (styleLower.includes('blue') || styleLower.includes('sky') || styleLower.includes('ocean') || styleLower.includes('cold') || styleLower.includes('cool')) {
-          bgGradient = {
-            start: '#ecfeff',
-            end: '#eff6ff',
-            accent: '#bae6fd',
-            border: '#60a5fa',
-            leafColor: '#38bdf8'
-          };
+
+        if (submittedCount === 6) {
+          setPlantStage(5); // Bloom completely!
+          setSpeechBubble('🎉 Incredible! You solved all 6 empathy scenarios with true empathy! I am blooming completely with love! 🌸');
+          writeToTerminal('🏆 Congratulations! You successfully transformed all parent language with deep empathy!');
+          textToSpeech('Incredible! You completed all empathy lessons. I am blooming with love.');
+        } else {
+          setSpeechBubble(result.feedback || `Empathetic response accepted! (${submittedCount}/6) Keep helping Yuen! 💖`);
+          writeToTerminal(`[Step 4] Empathy accepted for "${key}". Teacher feedback: ${result.feedback}`);
+          // Gradually change flower stages
+          if (submittedCount === 1 || submittedCount === 2) setPlantStage(2);
+          if (submittedCount === 3 || submittedCount === 4) setPlantStage(3);
+          if (submittedCount === 5) setPlantStage(4);
         }
 
-        const splatters = `
-          <g opacity="0.35">
-            <path d="M 60,110 C 160,60 260,160 210,260 C 130,330 90,210 60,110 Z" fill="${bgGradient.start}" filter="blur(30px)" />
-            <path d="M 490,90 C 540,190 390,230 370,330 C 340,410 470,490 490,90 Z" fill="${bgGradient.end}" filter="blur(35px)" />
-            <path d="M 130,470 C 230,510 190,410 310,490 C 210,570 90,540 130,470 Z" fill="${bgGradient.accent}" filter="blur(40px)" />
+        return next;
+      });
+    } else {
+      playSoundEffect('cry');
+      setSpeechBubble(`Teacher Feedback: ${result.feedback} 💖`);
+      writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${result.feedback}`);
+    }
+  } catch (error) {
+    console.error("Error evaluating empathy:", error);
+    setStep4Checking(prev => ({ ...prev, [key]: false }));
+    setStep4Feedbacks(prev => ({ ...prev, [key]: "Empathy analysis offline, but we believe in your kindness! ❤️" }));
+    // Graceful fallback: accept as correct
+    setStep4Submitted(prev => {
+      const next = { ...prev, [key]: true };
+      const submittedCount = Object.values(next).filter(Boolean).length;
+      playSoundEffect('bloom');
+      if (submittedCount === 6) {
+        setPlantStage(5);
+      }
+      return next;
+    });
+    setSpeechBubble("Communication is sweet! Your response is unlocked! ❤️");
+  }
+};
+
+    const generateStep5Card = async () => {
+  if (!step5Message.trim()) {
+    setStep5Error("Please write a warm message for your card first! 💖");
+    return;
+  }
+  
+  setStep5Generating(true);
+  setStep5Error(null);
+  setStep5ImageUrl(null);
+  playSoundEffect('action');
+  setSpeechBubble('Magic is on the way... Painting a beautiful personalized card art background... 🎨');
+  writeToTerminal('[Step 5] Generating digital thank you card background via Gemini image model...');
+
+  // Compile dynamic custom prompt from user inputs
+  const compiledPrompt = `Please create an image for a thank-you card for ${cardRecipient || 'someone special'}. Color & style: ${cardStyle || 'beautiful colors'}. Decoration elements: ${cardSticker || 'cute details'}.`;
+
+  try {
+    const response = await fetch('/api/card/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        message: step5Message,
+        customPrompt: compiledPrompt,
+        recipient: cardRecipient,
+        style: cardStyle,
+        sticker: cardSticker
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate background. Make sure your Gemini API key is configured!");
+    }
+
+    const result = await response.json();
+    if (result.imageUrl) {
+      setStep5ImageUrl(result.imageUrl);
+      playSoundEffect('bloom');
+      setShowSparkles(true);
+      setTimeout(() => setShowSparkles(false), 2000);
+      setSpeechBubble(`🎉 Presto! The AI has created a gorgeous card background styled with ${cardStyle}! 🌸`);
+      writeToTerminal('[Step 5] Thank you card background generated successfully!');
+    } else {
+      throw new Error("No image URL returned from API");
+    }
+  } catch (err: any) {
+    console.error("Gemini image API is currently offline/exhausted. Generating cozy dynamic custom vector illustration:", err);
+    
+    // Beautiful local SVG watercolor vector fallback pattern customized by the student's choices!
+    const generateLocalCustomSvg = (style: string = '', sticker: string = '', recipient: string = '') => {
+      const styleLower = (style || '').toLowerCase();
+      const stickerLower = (sticker || '').toLowerCase();
+      
+      let bgGradient = {
+        start: '#fff5f5',
+        end: '#fef2f2',
+        accent: '#fecdd3',
+        border: '#fda4af',
+        leafColor: '#fb7185'
+      };
+      
+      if (styleLower.includes('pink') || styleLower.includes('purple') || styleLower.includes('violet') || styleLower.includes('lavender')) {
+        bgGradient = {
+          start: '#fff1f2',
+          end: '#f5f3ff',
+          accent: '#fbcfe8',
+          border: '#f472b6',
+          leafColor: '#c084fc'
+        };
+      } else if (styleLower.includes('sunset') || styleLower.includes('orange') || styleLower.includes('peach') || styleLower.includes('warm') || styleLower.includes('red') || styleLower.includes('coral')) {
+        bgGradient = {
+          start: '#fff5f5',
+          end: '#fef3c7',
+          accent: '#fed7aa',
+          border: '#fb923c',
+          leafColor: '#f59e0b'
+        };
+      } else if (styleLower.includes('floral') || styleLower.includes('green') || styleLower.includes('yellow') || styleLower.includes('garden') || styleLower.includes('leaf') || styleLower.includes('nature')) {
+        bgGradient = {
+          start: '#f0fdf4',
+          end: '#fefce8',
+          accent: '#bbf7d0',
+          border: '#86efac',
+          leafColor: '#22c55e'
+        };
+      } else if (styleLower.includes('blue') || styleLower.includes('sky') || styleLower.includes('ocean') || styleLower.includes('cold') || styleLower.includes('cool')) {
+        bgGradient = {
+          start: '#ecfeff',
+          end: '#eff6ff',
+          accent: '#bae6fd',
+          border: '#60a5fa',
+          leafColor: '#38bdf8'
+        };
+      }
+
+      const splatters = `
+        <g opacity="0.35">
+          <path d="M 60,110 C 160,60 260,160 210,260 C 130,330 90,210 60,110 Z" fill="${bgGradient.start}" filter="blur(30px)" />
+          <path d="M 490,90 C 540,190 390,230 370,330 C 340,410 470,490 490,90 Z" fill="${bgGradient.end}" filter="blur(35px)" />
+          <path d="M 130,470 C 230,510 190,410 310,490 C 210,570 90,540 130,470 Z" fill="${bgGradient.accent}" filter="blur(40px)" />
+        </g>
+      `;
+
+      let floralDecorations = '';
+      if (styleLower.includes('sunset') || styleLower.includes('sky')) {
+        floralDecorations = `
+          <g transform="translate(60, 60)">
+            <path d="M 0,-15 L 4,-4 L 15,0 L 4,4 L 0,15 L -4,4 L -15,0 L -4,-4 Z" fill="#fef08a" opacity="0.9" />
+            <path d="M 20,-20 L 22,-5 L 37,-3 L 22,-1 L 20,14 L 18,-1 L 3,-3 L 18,-5 Z" fill="#fef08a" opacity="0.6" transform="scale(0.6)" />
+          </g>
+          <g transform="translate(520, 60)" opacity="0.85">
+            <path d="M0,10 C-15,10 -25,0 -20,-15 C-15,-30 5,-30 15,-20 C25,-30 45,-25 45,-10 C55,-10 60,5 45,15 C35,25 15,20 0,10 Z" fill="#ffffff" />
+            <path d="M10,15 C-5,15 -15,5 -10,-10 C-5,-25 15,-25 25,-15 C35,-25 55,-20 55,-5 C65,-5 70,10 55,20 C45,30 25,25 10,15 Z" fill="#fef2f2" opacity="0.5" transform="translate(-10, -5) scale(0.9)" />
+          </g>
+          <g transform="translate(70, 520)" opacity="0.8">
+            <path d="M0,0 A 20,20 0 1,0 30,-10 A 15,15 0 1,1 0,0" fill="#fef08a" />
           </g>
         `;
-
-        let floralDecorations = '';
-        if (styleLower.includes('sunset') || styleLower.includes('sky')) {
-          floralDecorations = `
-            <g transform="translate(60, 60)">
-              <path d="M 0,-15 L 4,-4 L 15,0 L 4,4 L 0,15 L -4,4 L -15,0 L -4,-4 Z" fill="#fef08a" opacity="0.9" />
-              <path d="M 20,-20 L 22,-5 L 37,-3 L 22,-1 L 20,14 L 18,-1 L 3,-3 L 18,-5 Z" fill="#fef08a" opacity="0.6" transform="scale(0.6)" />
-            </g>
-            <g transform="translate(520, 60)" opacity="0.85">
-              <path d="M0,10 C-15,10 -25,0 -20,-15 C-15,-30 5,-30 15,-20 C25,-30 45,-25 45,-10 C55,-10 60,5 45,15 C35,25 15,20 0,10 Z" fill="#ffffff" />
-              <path d="M10,15 C-5,15 -15,5 -10,-10 C-5,-25 15,-25 25,-15 C35,-25 55,-20 55,-5 C65,-5 70,10 55,20 C45,30 25,25 10,15 Z" fill="#fef2f2" opacity="0.5" transform="translate(-10, -5) scale(0.9)" />
-            </g>
-            <g transform="translate(70, 520)" opacity="0.8">
-              <path d="M0,0 A 20,20 0 1,0 30,-10 A 15,15 0 1,1 0,0" fill="#fef08a" />
-            </g>
-          `;
-        } else {
-          floralDecorations = `
-            <g transform="translate(60, 60)">
-              <path d="M-40,0 C-20,-30 10,-30 20,0 C30,30 0,40 -40,0 Z" fill="${bgGradient.leafColor}" opacity="0.25" transform="rotate(-15)"/>
-              <path d="M0,-40 C30,-20 30,10 0,20 C-30,30 -40,0 0,-40 Z" fill="${bgGradient.leafColor}" opacity="0.2" transform="rotate(45)"/>
-              <circle cx="0" cy="0" r="16" fill="${bgGradient.border}" opacity="0.8" />
-              <circle cx="6" cy="-6" r="12" fill="${bgGradient.accent}" opacity="0.7" />
-              <circle cx="-6" cy="6" r="12" fill="${bgGradient.accent}" opacity="0.7" />
-              <circle cx="0" cy="0" r="6" fill="#ffffff" opacity="0.9" />
-            </g>
-            <g transform="translate(540, 60)">
-              <path d="M0,0 Q-40,-20 -80,10" fill="none" stroke="${bgGradient.leafColor}" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
-              <path d="M0,0 Q20,-40 -10,-60" fill="none" stroke="${bgGradient.leafColor}" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
-              <circle cx="-40" cy="-10" r="8" fill="${bgGradient.border}" opacity="0.7"/>
-              <circle cx="-70" cy="5" r="5" fill="${bgGradient.accent}" opacity="0.8"/>
-            </g>
-            <g transform="translate(60, 540)">
-              <circle cx="0" cy="0" r="15" fill="${bgGradient.border}" opacity="0.7"/>
-              <circle cx="-10" cy="-10" r="12" fill="${bgGradient.accent}" opacity="0.6"/>
-              <circle cx="10" cy="10" r="10" fill="${bgGradient.leafColor}" opacity="0.4"/>
-            </g>
-          `;
-        }
-
-        let stickerElement = '';
-        if (stickerLower.includes('cat') || stickerLower.includes('kitty')) {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <path d="M -50,5 C -55,-25 -45,-45 -25,-45 C -15,-45 -10,-35 0,-35 C 10,-35 15,-45 25,-45 C 45,-45 55,-25 50,5 C 45,35 25,45 0,45 C -25,45 -45,35 -50,5 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-              <ellipse cx="0" cy="8" rx="35" ry="25" fill="#fdbaf8" />
-              <ellipse cx="0" cy="8" rx="32" ry="22" fill="#fbcfe8" />
-              <circle cx="0" cy="-12" r="22" fill="#fbcfe8" />
-              <polygon points="-18,-24 -8,-10 -22,-6" fill="#f9a8d4" />
-              <polygon points="-16,-20 -10,-11 -19,-8" fill="#f472b6" />
-              <polygon points="18,-24 8,-10 22,-6" fill="#f9a8d4" />
-              <polygon points="16,-20 10,-11 19,-8" fill="#f472b6" />
-              <path d="M -12,-12 Q -8,-15 -4,-12" fill="none" stroke="#6b21a8" stroke-width="2.5" stroke-linecap="round" />
-              <path d="M 4,-12 Q 8,-15 12,-12" fill="none" stroke="#6b21a8" stroke-width="2.5" stroke-linecap="round" />
-              <circle cx="-13" cy="-6" r="4" fill="#f43f5e" opacity="0.6" />
-              <circle cx="13" cy="-6" r="4" fill="#f43f5e" opacity="0.6" />
-              <polygon points="-1,-8 1,-8 0,-7" fill="#be185d" />
-              <path d="M -3,-5 Q 0,-3 3,-5" fill="none" stroke="#6b21a8" stroke-width="2" stroke-linecap="round" />
-              <ellipse cx="-12" cy="18" rx="7" ry="5" fill="#ffffff" />
-              <ellipse cx="12" cy="18" rx="7" ry="5" fill="#ffffff" />
-              <path d="M 28,15 Q 40,25 45,10" fill="none" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" />
-            </g>
-          `;
-        } else if (stickerLower.includes('sun') || stickerLower.includes('sunshine')) {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <circle cx="0" cy="0" r="48" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-              <g stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.8">
-                <line x1="0" y1="-38" x2="0" y2="-30" />
-                <line x1="0" y1="30" x2="0" y2="38" />
-                <line x1="-30" y1="0" x2="-38" y2="0" />
-                <line x1="30" y1="0" x2="38" y2="0" />
-                <line x1="-24" y1="-24" x2="-19" y2="-19" />
-                <line x1="19" y1="19" x2="24" y2="24" />
-                <line x1="24" y1="-24" x2="19" y2="-19" />
-                <line x1="-19" y1="19" x2="-24" y2="24" />
-              </g>
-              <circle cx="0" cy="0" r="28" fill="#fbbf24" />
-              <circle cx="0" cy="0" r="25" fill="#fef08a" />
-              <circle cx="-8" cy="-4" r="3" fill="#78350f" />
-              <circle cx="8" cy="-4" r="3" fill="#78350f" />
-              <circle cx="-12" cy="3" r="4" fill="#f43f5e" opacity="0.6" />
-              <circle cx="12" cy="3" r="4" fill="#f43f5e" opacity="0.6" />
-              <path d="M -5,4 Q 0,9 5,4" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
-            </g>
-          `;
-        } else if (stickerLower.includes('bear')) {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <path d="M -42,10 C -48,-15 -42,-35 -25,-40 C -15,-42 -5,-35 0,-35 C 5,-35 15,-42 25,-40 C 42,-35 48,-15 42,10 C 38,32 20,44 0,44 C -20,44 -38,32 -42,10 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-              <circle cx="0" cy="2" r="28" fill="#b45309" />
-              <circle cx="0" cy="2" r="25" fill="#d97706" />
-              <circle cx="-20" cy="-18" r="10" fill="#b45309" />
-              <circle cx="-20" cy="-18" r="6" fill="#fef3c7" />
-              <circle cx="20" cy="-18" r="10" fill="#b45309" />
-              <circle cx="20" cy="-18" r="6" fill="#fef3c7" />
-              <ellipse cx="0" cy="8" rx="10" ry="7" fill="#fef3c7" />
-              <polygon points="-3,5 3,5 0,8" fill="#78350f" />
-              <path d="M -12,0 Q -8,-3 -4,0" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
-              <path d="M 4,0 Q 8,-3 12,0" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
-              <circle cx="-14" cy="7" r="3" fill="#f43f5e" opacity="0.6" />
-              <circle cx="14" cy="7" r="3" fill="#f43f5e" opacity="0.6" />
-            </g>
-          `;
-        } else if (stickerLower.includes('flower') || stickerLower.includes('floral') || stickerLower.includes('rose') || stickerLower.includes('blossom')) {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <path d="M -35,5 C -45,-25 -15,-45 10,-35 C 35,-45 45,-15 35,15 C 25,35 -15,45 -35,5 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-              <circle cx="-6" cy="-6" r="16" fill="#fda4af" opacity="0.9" />
-              <circle cx="8" cy="8" r="14" fill="#fecdd3" opacity="0.9" />
-              <circle cx="10" cy="-10" r="15" fill="#f472b6" opacity="0.8" />
-              <circle cx="-10" cy="10" r="12" fill="#fb7185" opacity="0.8" />
-              <circle cx="0" cy="0" r="8" fill="#be123c" />
-              <circle cx="0" cy="0" r="4" fill="#ffffff" />
-              <path d="M 24,20 C 35,28 35,12 28,8 Z" fill="#4ade80" />
-              <path d="M -24,-20 C -35,-28 -35,-12 -28,-8 Z" fill="#4ade80" />
-            </g>
-          `;
-        } else if (stickerLower.includes('heart') || stickerLower.includes('love')) {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <path d="M -30,-15 C -45,-35 -5,-45 10,-20 C 25,-45 50,-30 35,0 C 20,25 0,40 -10,42 C -25,30 -45,10 -30,-15 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-              <path d="M 5,-10 C 15,-25 35,-15 25,5 C 15,20 0,32 -5,32 C -15,25 -30,5 -20,-10 C -10,-25 0,-15 5,-10 Z" fill="#f43f5e" />
-              <ellipse cx="-10" cy="-6" rx="4" ry="7" fill="#ffffff" opacity="0.4" transform="rotate(-30 -10 -6)" />
-              <path d="M -15,10 C -10,2 -2,6 -5,15 C -8,20 -15,25 -17,25 C -20,22 -25,18 -22,12 C -20,8 -17,10 -15,10 Z" fill="#ec4899" opacity="0.9" />
-            </g>
-          `;
-        } else {
-          stickerElement = `
-            <g transform="translate(460, 460)">
-              <path d="M 0,-40 L 12,-12 L 40,-8 L 18,12 L 25,40 L 0,22 L -25,40 L -18,12 L -40,-8 L -12,-12 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" />
-              <path d="M 0,-34 L 10,-10 L 34,-7 L 15,10 L 21,34 L 0,19 L -21,34 L -15,10 L -34,-7 L -10,-10 Z" fill="#f59e0b" />
-              <path d="M 0,-34 L 10,-10 L 34,-7 L 15,10 L 21,34 L 0,19 Z" fill="#fbbf24" />
-              <circle cx="0" cy="0" r="4" fill="#ffffff" opacity="0.9" />
-              <circle cx="-15" cy="-20" r="3" fill="#ffffff" />
-              <circle cx="15" cy="20" r="2.5" fill="#ffffff" />
-            </g>
-          `;
-        }
-
-        const svgContent = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
-            <defs>
-              <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="${bgGradient.start}" />
-                <stop offset="100%" stop-color="${bgGradient.end}" />
-              </linearGradient>
-              <filter id="paperTexture" x="0%" y="0%" width="100%" height="100%">
-                <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
-                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.04 0" />
-                <feBlend mode="multiply" in="SourceGraphic" in2="noise" />
-              </filter>
-            </defs>
-
-            <rect width="600" height="600" fill="url(#cardGrad)" rx="24" />
-            <rect width="600" height="600" fill="none" rx="24" filter="url(#paperTexture)" />
-
-            ${splatters}
-            ${floralDecorations}
-
-            <rect x="25" y="25" width="550" height="550" fill="none" stroke="${bgGradient.border}" stroke-width="2.5" stroke-dasharray="8 6" rx="18" opacity="0.6" />
-
-            <g transform="translate(300, 52)">
-              <text text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="12" fill="${bgGradient.leafColor}" font-weight="bold" letter-spacing="1.5" opacity="0.8">
-                ESPECIALLY MADE FOR ${(recipient || '').toUpperCase()}
-              </text>
-            </g>
-
-            ${stickerElement}
-          </svg>
+      } else {
+        floralDecorations = `
+          <g transform="translate(60, 60)">
+            <path d="M-40,0 C-20,-30 10,-30 20,0 C30,30 0,40 -40,0 Z" fill="${bgGradient.leafColor}" opacity="0.25" transform="rotate(-15)"/>
+            <path d="M0,-40 C30,-20 30,10 0,20 C-30,30 -40,0 0,-40 Z" fill="${bgGradient.leafColor}" opacity="0.2" transform="rotate(45)"/>
+            <circle cx="0" cy="0" r="16" fill="${bgGradient.border}" opacity="0.8" />
+            <circle cx="6" cy="-6" r="12" fill="${bgGradient.accent}" opacity="0.7" />
+            <circle cx="-6" cy="6" r="12" fill="${bgGradient.accent}" opacity="0.7" />
+            <circle cx="0" cy="0" r="6" fill="#ffffff" opacity="0.9" />
+          </g>
+          <g transform="translate(540, 60)">
+            <path d="M0,0 Q-40,-20 -80,10" fill="none" stroke="${bgGradient.leafColor}" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+            <path d="M0,0 Q20,-40 -10,-60" fill="none" stroke="${bgGradient.leafColor}" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="-40" cy="-10" r="8" fill="${bgGradient.border}" opacity="0.7"/>
+            <circle cx="-70" cy="5" r="5" fill="${bgGradient.accent}" opacity="0.8"/>
+          </g>
+          <g transform="translate(60, 540)">
+            <circle cx="0" cy="0" r="15" fill="${bgGradient.border}" opacity="0.7"/>
+            <circle cx="-10" cy="-10" r="12" fill="${bgGradient.accent}" opacity="0.6"/>
+            <circle cx="10" cy="10" r="10" fill="${bgGradient.leafColor}" opacity="0.4"/>
+          </g>
         `;
+      }
 
+      let stickerElement = '';
+      if (stickerLower.includes('cat') || stickerLower.includes('kitty')) {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <path d="M -50,5 C -55,-25 -45,-45 -25,-45 C -15,-45 -10,-35 0,-35 C 10,-35 15,-45 25,-45 C 45,-45 55,-25 50,5 C 45,35 25,45 0,45 C -25,45 -45,35 -50,5 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+            <ellipse cx="0" cy="8" rx="35" ry="25" fill="#fdbaf8" />
+            <ellipse cx="0" cy="8" rx="32" ry="22" fill="#fbcfe8" />
+            <circle cx="0" cy="-12" r="22" fill="#fbcfe8" />
+            <polygon points="-18,-24 -8,-10 -22,-6" fill="#f9a8d4" />
+            <polygon points="-16,-20 -10,-11 -19,-8" fill="#f472b6" />
+            <polygon points="18,-24 8,-10 22,-6" fill="#f9a8d4" />
+            <polygon points="16,-20 10,-11 19,-8" fill="#f472b6" />
+            <path d="M -12,-12 Q -8,-15 -4,-12" fill="none" stroke="#6b21a8" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M 4,-12 Q 8,-15 12,-12" fill="none" stroke="#6b21a8" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="-13" cy="-6" r="4" fill="#f43f5e" opacity="0.6" />
+            <circle cx="13" cy="-6" r="4" fill="#f43f5e" opacity="0.6" />
+            <polygon points="-1,-8 1,-8 0,-7" fill="#be185d" />
+            <path d="M -3,-5 Q 0,-3 3,-5" fill="none" stroke="#6b21a8" stroke-width="2" stroke-linecap="round" />
+            <ellipse cx="-12" cy="18" rx="7" ry="5" fill="#ffffff" />
+            <ellipse cx="12" cy="18" rx="7" ry="5" fill="#ffffff" />
+            <path d="M 28,15 Q 40,25 45,10" fill="none" stroke="#fbcfe8" stroke-width="6" stroke-linecap="round" />
+          </g>
+        `;
+      } else if (stickerLower.includes('sun') || stickerLower.includes('sunshine')) {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <circle cx="0" cy="0" r="48" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+            <g stroke="#f59e0b" stroke-width="6" stroke-linecap="round" opacity="0.8">
+              <line x1="0" y1="-38" x2="0" y2="-30" />
+              <line x1="0" y1="30" x2="0" y2="38" />
+              <line x1="-30" y1="0" x2="-38" y2="0" />
+              <line x1="30" y1="0" x2="38" y2="0" />
+              <line x1="-24" y1="-24" x2="-19" y2="-19" />
+              <line x1="19" y1="19" x2="24" y2="24" />
+              <line x1="24" y1="-24" x2="19" y2="-19" />
+              <line x1="-19" y1="19" x2="-24" y2="24" />
+            </g>
+            <circle cx="0" cy="0" r="28" fill="#fbbf24" />
+            <circle cx="0" cy="0" r="25" fill="#fef08a" />
+            <circle cx="-8" cy="-4" r="3" fill="#78350f" />
+            <circle cx="8" cy="-4" r="3" fill="#78350f" />
+            <circle cx="-12" cy="3" r="4" fill="#f43f5e" opacity="0.6" />
+            <circle cx="12" cy="3" r="4" fill="#f43f5e" opacity="0.6" />
+            <path d="M -5,4 Q 0,9 5,4" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+          </g>
+        `;
+      } else if (stickerLower.includes('bear')) {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <path d="M -42,10 C -48,-15 -42,-35 -25,-40 C -15,-42 -5,-35 0,-35 C 5,-35 15,-42 25,-40 C 42,-35 48,-15 42,10 C 38,32 20,44 0,44 C -20,44 -38,32 -42,10 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+            <circle cx="0" cy="2" r="28" fill="#b45309" />
+            <circle cx="0" cy="2" r="25" fill="#d97706" />
+            <circle cx="-20" cy="-18" r="10" fill="#b45309" />
+            <circle cx="-20" cy="-18" r="6" fill="#fef3c7" />
+            <circle cx="20" cy="-18" r="10" fill="#b45309" />
+            <circle cx="20" cy="-18" r="6" fill="#fef3c7" />
+            <ellipse cx="0" cy="8" rx="10" ry="7" fill="#fef3c7" />
+            <polygon points="-3,5 3,5 0,8" fill="#78350f" />
+            <path d="M -12,0 Q -8,-3 -4,0" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M 4,0 Q 8,-3 12,0" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="-14" cy="7" r="3" fill="#f43f5e" opacity="0.6" />
+            <circle cx="14" cy="7" r="3" fill="#f43f5e" opacity="0.6" />
+          </g>
+        `;
+      } else if (stickerLower.includes('flower') || stickerLower.includes('floral') || stickerLower.includes('rose') || stickerLower.includes('blossom')) {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <path d="M -35,5 C -45,-25 -15,-45 10,-35 C 35,-45 45,-15 35,15 C 25,35 -15,45 -35,5 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+            <circle cx="-6" cy="-6" r="16" fill="#fda4af" opacity="0.9" />
+            <circle cx="8" cy="8" r="14" fill="#fecdd3" opacity="0.9" />
+            <circle cx="10" cy="-10" r="15" fill="#f472b6" opacity="0.8" />
+            <circle cx="-10" cy="10" r="12" fill="#fb7185" opacity="0.8" />
+            <circle cx="0" cy="0" r="8" fill="#be123c" />
+            <circle cx="0" cy="0" r="4" fill="#ffffff" />
+            <path d="M 24,20 C 35,28 35,12 28,8 Z" fill="#4ade80" />
+            <path d="M -24,-20 C -35,-28 -35,-12 -28,-8 Z" fill="#4ade80" />
+          </g>
+        `;
+      } else if (stickerLower.includes('heart') || stickerLower.includes('love')) {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <path d="M -30,-15 C -45,-35 -5,-45 10,-20 C 25,-45 50,-30 35,0 C 20,25 0,40 -10,42 C -25,30 -45,10 -30,-15 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
+            <path d="M 5,-10 C 15,-25 35,-15 25,5 C 15,20 0,32 -5,32 C -15,25 -30,5 -20,-10 C -10,-25 0,-15 5,-10 Z" fill="#f43f5e" />
+            <ellipse cx="-10" cy="-6" rx="4" ry="7" fill="#ffffff" opacity="0.4" transform="rotate(-30 -10 -6)" />
+            <path d="M -15,10 C -10,2 -2,6 -5,15 C -8,20 -15,25 -17,25 C -20,22 -25,18 -22,12 C -20,8 -17,10 -15,10 Z" fill="#ec4899" opacity="0.9" />
+          </g>
+        `;
+      } else {
+        stickerElement = `
+          <g transform="translate(460, 460)">
+            <path d="M 0,-40 L 12,-12 L 40,-8 L 18,12 L 25,40 L 0,22 L -25,40 L -18,12 L -40,-8 L -12,-12 Z" fill="#ffffff" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" />
+            <path d="M 0,-34 L 10,-10 L 34,-7 L 15,10 L 21,34 L 0,19 Z" fill="#f59e0b" />
+            <path d="M 0,-34 L 10,-10 L 34,-7 L 15,10 L 21,34 L 0,19 Z" fill="#fbbf24" />
+            <circle cx="0" cy="0" r="4" fill="#ffffff" opacity="0.9" />
+            <circle cx="-15" cy="-20" r="3" fill="#ffffff" />
+            <circle cx="15" cy="20" r="2.5" fill="#ffffff" />
+          </g>
+        `;
+      }
+
+      const svgContent = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+          <defs>
+            <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="${bgGradient.start}" />
+              <stop offset="100%" stop-color="${bgGradient.end}" />
+            </linearGradient>
+            <filter id="paperTexture" x="0%" y="0%" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+              <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.04 0" />
+              <feBlend mode="multiply" in="SourceGraphic" in2="noise" />
+            </filter>
+          </defs>
+
+          <rect width="600" height="600" fill="url(#cardGrad)" rx="24" />
+          <rect width="600" height="600" fill="none" rx="24" filter="url(#paperTexture)" />
+
+          ${splatters}
+          ${floralDecorations}
+
+          <rect x="25" y="25" width="550" height="550" fill="none" stroke="${bgGradient.border}" stroke-width="2.5" stroke-dasharray="8 6" rx="18" opacity="0.6" />
+
+          <g transform="translate(300, 52)">
+            <text text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="12" fill="${bgGradient.leafColor}" font-weight="bold" letter-spacing="1.5" opacity="0.8">
+              ESPECIALLY MADE FOR ${(recipient || '').toUpperCase()}
+            </text>
+          </g>
+
+          ${stickerElement}
+        </svg>
+      `;
+      return svgContent;
+    };
+    // 兜底赋值，解决空白
+    const svgCode = generateLocalCustomSvg(cardStyle, cardSticker, cardRecipient);
+    setStep5ImageUrl(`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgCode)))}`);
+  } finally {
+    setStep5Generating(false);
+  }
+};
+    
         return `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(svgContent.trim())))}`;
       };
 
