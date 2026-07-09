@@ -25,9 +25,6 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // Serve custom IMAGES folder statically
-  app.use('/IMAGES', express.static(path.join(process.cwd(), 'IMAGES')));
-
   // API Route: Check Empathy
   app.post("/api/empathy/check", async (req, res) => {
     try {
