@@ -29,15 +29,15 @@ interface MatchCard {
 
 // 9 Illustrated WebP Links exactly specified by the user
 const vocabularyDatabase: VocabularyItem[] = [
-  { value: 'wonderful', isPositive: true, img: '/IMAGES/WONDERFUL.png' },
-  { value: 'beautiful', isPositive: true, img: '/IMAGES/BEAUTIFUL.png' },
-  { value: 'kind', isPositive: true, img: '/IMAGES/KIND.png' },
-  { value: 'caring', isPositive: true, img: '/IMAGES/CARING.png' },
-  { value: 'helpful', isPositive: true, img: '/IMAGES/HELPFUL.png' },
-  { value: 'silly', isPositive: false, img: '/IMAGES/SILLY.png' },
-  { value: 'ugly', isPositive: false, img: '/IMAGES/UGLY.png' },
-  { value: 'mean', isPositive: false, img: '/IMAGES/MEAN.png' },
-  { value: 'unhelpful', isPositive: false, img: '/IMAGES/UNHELPFUL.png' }
+  { value: 'wonderful', isPositive: true, img: '/WONDERFUL.png' },
+  { value: 'beautiful', isPositive: true, img: '/BEAUTIFUL.png' },
+  { value: 'kind', isPositive: true, img: '/KIND.png' },
+  { value: 'caring', isPositive: true, img: '/CARING.png' },
+  { value: 'helpful', isPositive: true, img: '/HELPFUL.png' },
+  { value: 'silly', isPositive: false, img: '/SILLY.png' },
+  { value: 'ugly', isPositive: false, img: '/UGLY.png' },
+  { value: 'mean', isPositive: false, img: '/MEAN.png' },
+  { value: 'unhelpful', isPositive: false, img: '/UNHELPFUL.png' }
 ];
 
 // Fallback graphics and aesthetics in case the image fails to load
@@ -690,7 +690,7 @@ export default function App() {
       emoji: '📚✏️',
       advice: 'Dad is angry and uses the negative label "LAZY". Yuen feels pressured and sad. How could Dad say this with empathy?',
       suggestedPlaceholder: 'e.g., "Math can be tough, Yuen. Do you need a short break or some help?"',
-      img: '/IMAGES/01.png'
+      img: '/01.png'
     },
     {
       id: 'dinner',
@@ -701,7 +701,7 @@ export default function App() {
       emoji: '🍲🥦',
       advice: 'Mom labels Yuen as "PICKY" and tries to guilt-trip him. Yuen feels ashamed. How could Mom express understanding about his appetite?',
       suggestedPlaceholder: 'e.g., "I know you don\'t like this vegetable. How about we try just three small bites?"',
-      img: '/IMAGES/02.png'
+      img: '/02.png'
     },
     {
       id: 'sports',
@@ -712,7 +712,7 @@ export default function App() {
       emoji: '🏃‍♂️⏱️',
       advice: 'Mom yells "WEAK" and demands more effort. Yuen is already running his hardest and feels exhausted. How could Mom cheer his effort?',
       suggestedPlaceholder: 'e.g., "You are working so hard out there! I am proud of your effort, Yuen!"',
-      img: '/IMAGES/03.png'
+      img: '/03.png'
     },
     {
       id: 'piano',
@@ -723,7 +723,7 @@ export default function App() {
       emoji: '🎹🎵',
       advice: 'Mom harshly calls his play "TERRIBLE". Yuen feels helpless and starts crying. How could Mom encourage him to try again gently?',
       suggestedPlaceholder: 'e.g., "That was a tricky part! Let\'s slow down and practice this melody together."',
-      img: '/IMAGES/04.png'
+      img: '/04.png'
     },
     {
       id: 'cleaning',
@@ -734,7 +734,7 @@ export default function App() {
       emoji: '🧹🧸',
       advice: 'Dad shouts "DISGUSTING" and "UNTIDY". Yuen is overwhelmed by the mess. How could Dad guide him to clean up supportively?',
       suggestedPlaceholder: 'e.g., "There are many toys here! Let\'s clean them up together. Which box should we start with?"',
-      img: '/IMAGES/05.png'
+      img: '/05.png'
     },
     {
       id: 'bedtime',
@@ -745,7 +745,7 @@ export default function App() {
       emoji: '🛌🌙',
       advice: 'Yuen lies awake feeling unloved and anxious. Write a healing, comforting message of empathy directly to Yuen to help him feel valued.',
       suggestedPlaceholder: 'e.g., "Yuen, you are not weak or lazy. You are trying your best, and your effort is beautiful."',
-      img: '/IMAGES/06.png'
+      img: '/06.png'
     }
   ];
 
