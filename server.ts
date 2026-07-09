@@ -562,60 +562,63 @@ return res.json({
     let imageBase64 = "";
     let agnesSuccess = false;
 
-    // 1. Try calling Agnes API first
-    try {
-      console.log("Calling Agnes API for image generation...");
-      const response = await fetch("https://apihub.agnes-ai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer sk-NAYqG3pC8AlpnLnATh0TZ7MHBcKOXz6Lm42gHaSEEJcHWSe6"
-        },
-        body: JSON.stringify({
-          model: "agnes-image-2.1-flash",
-          prompt: prompt,
-          n: 1,
-          size: "1024x1024"
-        })
-      });
+// 1. Try calling Agnes API first
+try {
+  console.log("Calling Agnes API for image generation...");
+  const response = await fetch("https://apihub.agnes-ai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-NAYqG3pC8AlpnLnATh0TZ7MHBcKOXz6Lm42gHaSEEJcHWSe6"
+    },
+    body: JSON.stringify({
+      model: "agnes-image-2.1-flash",
+      prompt: prompt,
+      n: 1,
+      size: "1024x1024"
+    })
+  });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.data && data.data[0]) {
-          if (data.data[0].b64_json && data.data[0].b64_json.length > 10) {
-            imageBase64 = `data:image/png;base64,${data.data[0].b64_json}`;
-            agnesSuccess = true;
-            console.log("Successfully generated card image via Agnes API (b64_json).");
-          } else if (data.data[0].url) {
-            try {
-              console.log("Fetching generated image from Agnes URL to convert to Base64:", data.data[0].url);
-              const imgResponse = await fetch(data.data[0].url);
-              if (imgResponse.ok) {
-                const arrayBuffer = await imgResponse.arrayBuffer();
-                const base64String = Buffer.from(arrayBuffer).toString('base64');
-                imageBase64 = `data:image/png;base64,${base64String}`;
-                agnesSuccess = true;
-                console.log("Successfully converted Agnes image URL to Base64 in backend.");
-              } else {
-                console.warn(`Failed to fetch Agnes image URL, status: ${imgResponse.status}. Falling back to raw URL.`);
-                imageBase64 = data.data[0].url;
-                agnesSuccess = true;
-              }
-            } catch (fetchErr: any) {
-              console.error("Error downloading image from Agnes URL:", fetchErr.message);
-              imageBase64 = data.data[0].url;
-              agnesSuccess = true;
-            }
-          }
+  // 新增统一状态校验
+  console.log("Agnes Image API Status Code:", response.status);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Agnes image api status ${response.status}, detail: ${errorText}`);
+  }
+
+  // 下面所有解析图片的代码完全原样保留
+  const data = await response.json();
+  if (data.data && data.data[0]) {
+    if (data.data[0].b64_json && data.data[0].b64_json.length > 10) {
+      imageBase64 = `data:image/png;base64,${data.data[0].b64_json}`;
+      agnesSuccess = true;
+      console.log("Successfully generated card image via Agnes API (b64_json).");
+    } else if (data.data[0].url) {
+      try {
+        console.log("Fetching generated image from Agnes URL to convert to Base64:", data.data[0].url);
+        const imgResponse = await fetch(data.data[0].url);
+        if (imgResponse.ok) {
+          const arrayBuffer = await imgResponse.arrayBuffer();
+          const base64String = Buffer.from(arrayBuffer).toString('base64');
+          imageBase64 = `data:image/png;base64,${base64String}`;
+          agnesSuccess = true;
+          console.log("Successfully converted Agnes image URL to Base64 in backend.");
+        } else {
+          console.warn(`Failed to fetch Agnes image URL, status: ${imgResponse.status}. Falling back to raw URL.`);
+          imageBase64 = data.data[0].url;
+          agnesSuccess = true;
         }
-      } else {
-        const errorText = await response.text();
-        console.warn(`Agnes API image generation returned status: ${response.status}. Response: ${errorText}. Falling back...`);
+      } catch (fetchErr: any) {
+        console.error("Error downloading image from Agnes URL:", fetchErr.message);
+        imageBase64 = data.data[0].url;
+        agnesSuccess = true;
       }
-    } catch (agnesError) {
-      console.error("Agnes API image generation failed, falling back to local/Gemini:", agnesError);
     }
-
+  }
+} catch (agnesError) {
+  console.error("Agnes API image generation failed, falling back to local/Gemini:", agnesError);
+}
+    
     // 2. Fallback to local Gemini image generation
     if (!agnesSuccess) {
       try {
