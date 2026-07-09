@@ -2066,7 +2066,7 @@ export default function App() {
                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col md:flex-row gap-5 items-center">
                   <div className="w-full md:w-1/3 flex justify-center">
                     <img 
-                      src="/IMAGES/CHILD-PARENT FIGHTING.png" 
+                      src="/child-parent-fighting.png" 
                       alt="Parent and Child Communication" 
                       className="rounded-2xl shadow-md border border-slate-200/60 max-h-[160px] object-cover hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
