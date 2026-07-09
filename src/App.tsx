@@ -336,19 +336,35 @@ export default function App() {
     }
   };
 
-  const textToSpeech = (text: string) => {
-    if ('speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-GB';
-        utterance.rate = 0.85;
-        window.speechSynthesis.speak(utterance);
-      } catch (e) {
-        console.error(e);
-      }
+const textToSpeech = (text: string) => {
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-GB';
+      utterance.rate = 0.85;
+
+      // 筛选英式女声，贴近Agnes音色
+      const allVoices = window.speechSynthesis.getVoices();
+      const ukFemaleVoice = allVoices.find(voice =>
+        voice.lang.startsWith('en-GB') &&
+        (voice.name.toLowerCase().includes('female') || voice.name.includes('Agnes'))
+      );
+      if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
+
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.error(e);
     }
-  };
+  }
+};
+
+  // 预加载系统语音列表，解决第一次打开找不到人声的bug
+useEffect(() => {
+  const loadVoices = () => window.speechSynthesis.getVoices();
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}, []);
 
   // Nav across panels with Auto-Bypass
   const handleStepSwitch = (stepNum: 1 | 2 | 3 | 4 | 5) => {
