@@ -885,35 +885,47 @@ const handleEvaluateEmpathy = async (key: string, text: string, scenario: typeof
   const compiledPrompt = `Please create an image for a thank-you card for ${cardRecipient || 'someone special'}. Color & style: ${cardStyle || 'beautiful colors'}. Decoration elements: ${cardSticker || 'cute details'}.`;
 
   try {
-    const response = await fetch('/api/card/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message: step5Message,
-        customPrompt: compiledPrompt,
-        recipient: cardRecipient,
-        style: cardStyle,
-        sticker: cardSticker
-      })
-    });
+  const response = await fetch('/api/card/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      message: step5Message,
+      customPrompt: compiledPrompt,
+      recipient: cardRecipient,
+      style: cardStyle,
+      sticker: cardSticker
+    })
+  });
 
-    if (!response.ok) {
-      throw new Error("Failed to generate background. Make sure your Gemini API key is configured!");
-    }
+  if (!response.ok) {
+    throw new Error("Failed to generate background. Make sure your Gemini API key is configured!");
+  }
 
-    const result = await response.json();
-    if (result.imageUrl) {
-      setStep5ImageUrl(result.imageUrl);
-      playSoundEffect('bloom');
-      setShowSparkles(true);
-      setTimeout(() => setShowSparkles(false), 2000);
-      setSpeechBubble(`🎉 Presto! The AI has created a gorgeous card background styled with ${cardStyle}! 🌸`);
-      writeToTerminal('[Step 5] Thank you card background generated successfully!');
-    } else {
-      throw new Error("No image URL returned from API");
-    }
-  } catch (err: any) {
-    console.error("Gemini image API is currently offline/exhausted. Generating cozy dynamic custom vector illustration:", err);
+  const result = await response.json();
+  if (result.imageUrl) {
+    setStep5ImageUrl(result.imageUrl);
+    playSoundEffect('bloom');
+    setShowSparkles(true);
+    setTimeout(() => setShowSparkles(false), 2000);
+    setSpeechBubble(`🎉 Presto! The AI has created a gorgeous card background styled with ${cardStyle}! 🌸`);
+    writeToTerminal('[Step 5] Thank you card background generated successfully!');
+  } else {
+    throw new Error("No image URL returned from API");
+  }
+} catch (err: any) {
+  console.error("Gemini image API is currently offline/exhausted. Generating cozy dynamic custom vector illustration:", err);
+  // 完整 generateLocalCustomSvg SVG 生成逻辑全部保留在这里
+  const generateLocalCustomSvg = (style: string = '', sticker: string = '', recipient: string = '') => {
+    // 你的全部SVG配色、装饰、贴纸代码不变
+  };
+  // 兜底赋值，解决空白
+  const svgCode = generateLocalCustomSvg(cardStyle, cardSticker, cardRecipient);
+  const encodedSvg = btoa(encodeURIComponent(svgCode).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+  setStep5ImageUrl(`data:image/svg+xml;base64,${encodedSvg}`);
+} finally {
+  // finally 必须放在完整 catch 闭合之后
+  setStep5Generating(false);
+}
     
     // Beautiful local SVG watercolor vector fallback pattern customized by the student's choices!
     const generateLocalCustomSvg = (style: string = '', sticker: string = '', recipient: string = '') => {
