@@ -1,0 +1,6 @@
+{
+  "name": "Bloom",
+  "description": "An interactive values and English language learning game where students revive a shriveled plant through physical care and practice empathy using words of kindness.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

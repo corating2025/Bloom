@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Quicksand", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Fredoka One", cursive;
+}
+
+/* Custom micro-animations and weather effects */
+@keyframes sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+@keyframes shiver {
+  0%, 100% { transform: translate(0, 0) rotate(-1deg); }
+  25% { transform: translate(-2px, 1px) rotate(1deg); }
+  75% { transform: translate(1px, -1px) rotate(-1deg); }
+}
+@keyframes float-particle {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+}
+@keyframes drip {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { transform: translateY(220px) scale(0.6); opacity: 0; }
+}
+@keyframes sun-pulse {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.9; }
+}
+@keyframes card-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+@keyframes card-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); filter: brightness(1.2); }
+  100% { transform: scale(1); }
+}
+
+.animate-sway {
+  transform-origin: bottom center;
+  animation: sway 4s infinite ease-in-out;
+}
+.animate-shiver {
+  transform-origin: bottom center;
+  animation: shiver 0.3s infinite linear;
+}
+.particle {
+  animation: float-particle 2s infinite ease-out;
+}
+.tear-drop {
+  animation: drip 2s infinite linear;
+}
+.water-drop-particle {
+  animation: drip 1.2s infinite linear;
+}
+.fertilizer-particle {
+  animation: drip 1.4s infinite linear;
+}
+.sun-ray-pulse {
+  animation: sun-pulse 1.5s infinite alternate ease-in-out;
+}
+.animate-shake {
+  animation: card-shake 0.3s ease-in-out;
+}
+.animate-pop {
+  animation: card-pop 0.4s ease-in-out;
+}
+
+@keyframes float-heart {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { opacity: 0.95; }
+  100% { transform: translateY(-140px) scale(1.3); opacity: 0; }
+}
+.animate-float {
+  animation: float-heart 3.5s infinite ease-out;
+}
