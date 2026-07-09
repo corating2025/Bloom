@@ -106,7 +106,7 @@ async function startServer() {
         };
       };
 
-      // Try calling Agnes API
+     // Try calling Agnes API
 let result;
 let agnesSuccess = false;
 try {
@@ -177,26 +177,6 @@ return res.json({
   feedback: result.feedback
 });
       
-        if (response.ok) {
-          const data = await response.json();
-          if (data.choices && data.choices[0]?.message?.content) {
-            const content = data.choices[0].message.content.trim();
-            const jsonStart = content.indexOf('{');
-            const jsonEnd = content.lastIndexOf('}');
-            if (jsonStart !== -1 && jsonEnd !== -1) {
-              const cleanJson = content.slice(jsonStart, jsonEnd + 1);
-              result = JSON.parse(cleanJson);
-              agnesSuccess = true;
-              console.log("Successfully received and parsed Agnes API response.");
-            }
-          }
-        } else {
-          console.warn(`Agnes API returned status: ${response.status}. Falling back...`);
-        }
-      } catch (agnesError) {
-        console.error("Agnes API call failed, falling back to local/Gemini:", agnesError);
-      }
-
       // Fallback to Gemini if Agnes API failed
       if (!agnesSuccess) {
         if (!ai) {
