@@ -107,22 +107,22 @@ async function startServer() {
       };
 
       // Try calling Agnes API
-      let result;
-      let agnesSuccess = false;
-      try {
-        console.log("Calling Agnes API for empathy check...");
-        const response = await fetch("https://apihub.agnes-ai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer sk-NAYqG3pC8AlpnLnATh0TZ7MHBcKOXz6Lm42gHaSEEJcHWSe6"
-          },
-          body: JSON.stringify({
-            model: "agnes-2.0-flash",
-            messages: [
-              {
-                role: "system",
-                content: `You are a supportive, warm, and highly constructive primary school English and Empathy class teacher.
+let result;
+let agnesSuccess = false;
+try {
+  console.log("Calling Agnes API for empathy check...");
+  const response = await fetch("https://apihub.agnes-ai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-NAYqG3pC8AlpnLnATh0TZ7MHBcKOXz6Lm42gHaSEEJcHWSe6"
+    },
+    body: JSON.stringify({
+      model: "agnes-2.0-flash",
+      messages: [
+        {
+          role: "system",
+          content: `You are a supportive, warm, and highly constructive primary school English and Empathy class teacher.
 Evaluate the student's rewritten parent sentence for empathy, word choice, and grammatical correctness.
 
 Your feedback must evaluate three aspects:
@@ -135,17 +135,48 @@ Respond STRICTLY in JSON format matching this schema:
   "isEmpathetic": boolean (true if the response is caring and supportive, and has no severe grammar errors that ruin understanding; false if it contains negative labels, harsh criticisms, or severe errors),
   "feedback": "string (a super warm, direct feedback in simple English suitable for children, maximum 3 sentences. Separate your feedback into clear sections for [Content & Word Choices] and [Grammar Check]. Speak directly to the student!)"
 }`
-              },
-              {
-                role: "user",
-                content: `Original parent complaint: "${complaint}"
+        },
+        {
+          role: "user",
+          content: `Original parent complaint: "${complaint}"
 Teacher's advice on the scenario: "${advice}"
 Student's proposed rewritten response: "${userInput}"`
-              }
-            ]
-          })
-        });
+        }
+      ]
+    })
+  });
 
+  // 新增：判断接口是否正常返回
+  console.log("Agnes API Status Code:", response.status);
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`API请求失败，状态码${response.status}，详情：${errText}`);
+  }
+
+  // 解析大模型返回完整数据
+  const rawRes = await response.json();
+  const aiRawJson = rawRes.choices[0].message.content.trim();
+  // 把AI输出的json字符串转成对象
+  result = JSON.parse(aiRawJson);
+  agnesSuccess = true;
+  console.log("Agnes parsed feedback result:", result);
+
+} catch (err) {
+  console.error("Agnes API call failed full error:", err);
+  agnesSuccess = false;
+  // 接口异常兜底返回值
+  result = {
+    isEmpathetic: false,
+    feedback: "Empathy analysis offline, but we believe in your kindness! ❤️"
+  };
+}
+
+// 最后返回给前端接口响应
+return res.json({
+  isEmpathetic: result.isEmpathetic,
+  feedback: result.feedback
+});
+      
         if (response.ok) {
           const data = await response.json();
           if (data.choices && data.choices[0]?.message?.content) {
