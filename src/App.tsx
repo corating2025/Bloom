@@ -1152,55 +1152,44 @@ const handleEvaluateEmpathy = async (key: string, text: string, scenario: typeof
           ${stickerElement}
         </svg>
       `;
-      return svgContent;
-    };
-    // 兜底赋值，解决空白
-    const svgCode = generateLocalCustomSvg(cardStyle, cardSticker, cardRecipient);
-    setStep5ImageUrl(`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgCode)))}`);
-  } finally {
-    setStep5Generating(false);
-  }
-};
-    
-        return `data:image/svg+xml;base64,${window.btoa(unescape(encodeURIComponent(svgContent.trim())))}`;
-      };
-
-      const fallbackSvg = generateLocalCustomSvg(cardStyle, cardSticker, cardRecipient);
-      setStep5ImageUrl(fallbackSvg);
-      playSoundEffect('bloom');
-      setShowSparkles(true);
-      setTimeout(() => setShowSparkles(false), 2000);
-      setSpeechBubble(`🎉 Presto! I have painted a beautiful watercolor card themed with ${cardStyle} and adorned with ${cardSticker}! 🌸`);
-      writeToTerminal('[Step 5] Thank you card background generated dynamically!');
-    } finally {
-      setStep5Generating(false);
-    }
-  };
-
-  const loadStep5Template = (recipient: string, message: string, style: string, sticker: string) => {
-    setCardRecipient(recipient);
-    setStep5Message(message);
-    setCardStyle(style);
-    setCardSticker(sticker);
+       const svgCode = generateLocalCustomSvg(cardStyle, cardSticker, cardRecipient);
+    const encodedSvg = btoa(encodeURIComponent(svgCode).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+    setStep5ImageUrl(`data:image/svg+xml;base64,${encodedSvg}`);
     playSoundEffect('bloom');
-    setSpeechBubble(`Template loaded! Feel free to customize any part! ✨`);
-    writeToTerminal(`[Step 5] Pre-filled thank-you card builder template for "${recipient}".`);
-  };
+    setShowSparkles(true);
+    setTimeout(() => setShowSparkles(false), 2000);
+    setSpeechBubble(`🎉 Presto! I have painted a beautiful watercolor card themed with ${cardStyle} and adorned with ${cardSticker}! 🌸`);
+    writeToTerminal('[Step 5] Thank you card background generated dynamically!');
+} finally {
+  setStep5Generating(false);
+}
+};
 
-  const downloadMergedCard = () => {
-    if (!step5ImageUrl) return;
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 800;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      // Draw background
-      ctx.drawImage(img, 0, 0, 800, 800);
+// 下面这两个函数不动，保留
+const loadStep5Template = (recipient: string, message: string, style: string, sticker: string) => {
+  setCardRecipient(recipient);
+  setStep5Message(message);
+  setCardStyle(style);
+  setCardSticker(sticker);
+  playSoundEffect('bloom');
+  setSpeechBubble(`Template loaded! Feel free to customize any part! ✨`);
+  writeToTerminal(`[Step 5] Pre-filled thank-you card builder template for "${recipient}".`);
+};
+
+const downloadMergedCard = () => {
+  if (!step5ImageUrl) return;
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 800;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    // Draw background
+    ctx.drawImage(img, 0, 0, 800, 800);
       
       // Draw a semi-transparent white parchment overlays to make the text incredibly readable!
       ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
