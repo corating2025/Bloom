@@ -798,6 +798,7 @@ const handleStepSwitch = (stepNum: 1 | 2 | 3 | 4 | 5) => {
     const scenario = step4Scenarios.find(s => s.id === key);
 
 try {
+  // fetch 请求全部代码
   const response = await fetch('/api/empathy/check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -808,20 +809,16 @@ try {
       userInput: text
     })
   });
-
-  // 新增：状态码校验代码，就写在这里
   if (!response.ok) {
     const textRaw = await response.text();
     throw new Error(`接口异常 ${response.status}，原始返回：${textRaw}`);
   }
-
-  // 你原本的解析代码保持不变
   const data = await response.json();
-  // ...后续处理data的逻辑
-} catch (err) {
-  console.error("共情接口请求失败详情：", err);
-}
-    
+  writeToTerminal(`[Step 4] Rewrite rejected for "${key}". Teacher feedback: ${data.feedback}`);
+} catch (error) {
+  console.error("Error evaluating empathy:", error);
+  setStep4Checking(prev => ({ ...prev, [key]: false }));
+}    
       const result = await response.json();
       setStep4Checking(prev => ({ ...prev, [key]: false }));
       setStep4Feedbacks(prev => ({ ...prev, [key]: result.feedback || '' }));
